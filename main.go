@@ -4,15 +4,18 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"github.com/gocraft/dbr"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
+
+	"github.com/gocraft/dbr"
+	"github.com/metacoin/foundation"
 )
 
 func main() {
 	http.HandleFunc("/searchTxComment", txCommentSearch)
+	http.HandleFunc("/getMiningInfo", getMiningInfo)
 	fmt.Println("Listening on port 5831...")
 	log.Fatal(http.ListenAndServe(":5831", nil))
 }
@@ -25,6 +28,28 @@ func setHeaders(w http.ResponseWriter, r *http.Request, method string) http.Resp
 	rv.Header().Add("Access-Control-Allow-Headers", "Content-Type")
 	fmt.Printf("%v %v - %v sent %v to %v (", r.URL, r.Method, r.RemoteAddr, r.Method, endpoint)
 	return rv
+}
+
+func getMiningInfo(w http.ResponseWriter, r *http.Request) {
+
+	setHeaders(w, r, "GET")
+
+	type GetMiningInfoResponse struct {
+	}
+
+	response, err := foundation.RPCCall("getmininginfo")
+	if err != nil {
+		// this is merely an example. handle your errors please.
+		fmt.Println(err.Error())
+	}
+	fmt.Printf("response: %v\n", response)
+
+	json, err := json.Marshal(response)
+	if err != nil {
+		fmt.Fprintf(w, "error converting RPC response to JSON")
+	} else {
+		fmt.Fprintf(w, "%v", string(json))
+	}
 }
 
 func txCommentSearch(w http.ResponseWriter, r *http.Request) {
